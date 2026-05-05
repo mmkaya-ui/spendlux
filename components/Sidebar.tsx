@@ -10,6 +10,7 @@ import {
   LogOut,
   X,
   Wallet,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -22,7 +23,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const navItems = [
     { name: t.dashboard, href: "/dashboard", icon: LayoutDashboard },
@@ -112,16 +113,39 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {user?.email || "demo@spendlux.app"}
               </p>
             </div>
-            <button
-              className="btn-icon btn-ghost"
-              onClick={signOut}
-              title="Sign out"
-              id="btn-signout"
-              style={{ flexShrink: 0 }}
-            >
-              <LogOut size={16} />
-            </button>
           </div>
+          {/* Language Selector */}
+          <div style={{ marginTop: "var(--space-4)", marginBottom: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "0 var(--space-2)" }}>
+            <Globe size={16} style={{ color: "var(--text-tertiary)" }} />
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as any)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--text-secondary)",
+                fontSize: "var(--text-xs)",
+                cursor: "pointer",
+                outline: "none",
+                width: "100%",
+              }}
+              aria-label="Select Language"
+            >
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+              <option value="tr">Türkçe</option>
+            </select>
+          </div>
+
+          <button
+            className="btn-ghost"
+            onClick={signOut}
+            style={{ width: "100%", justifyContent: "flex-start", fontSize: "var(--text-sm)", color: "var(--text-secondary)", padding: "var(--space-2)" }}
+            id="btn-signout"
+          >
+            <LogOut size={16} style={{ marginRight: "var(--space-2)" }} />
+            {t.signOut}
+          </button>
         </div>
       </aside>
 
