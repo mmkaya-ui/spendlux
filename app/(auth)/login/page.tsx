@@ -183,8 +183,6 @@ export default function LoginPage() {
             {isSignUp ? "Sign in" : "Sign up"}
           </button>
         </p>
-
-        </p>
       </div>
     </div>
   );
