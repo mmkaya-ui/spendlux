@@ -107,10 +107,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: "var(--text-sm)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.displayName || "User"}
+                {user?.displayName}
               </p>
               <p style={{ fontSize: "10px", color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.email || "demo@spendlux.app"}
+                {user?.email}
               </p>
             </div>
           </div>
