@@ -22,7 +22,8 @@ export default function AiInsights({ transactions }: AiInsightsProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await generateFinancialInsights(transactions);
+      const userApiKey = localStorage.getItem("spendlux-gemini-key") || undefined;
+      const result = await generateFinancialInsights(transactions, userApiKey);
       if (result.error) {
         setError(result.error);
         // Load some demo data if the API keys aren't set up yet so the user can see what it looks like

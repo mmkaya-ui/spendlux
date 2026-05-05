@@ -1,9 +1,10 @@
 "use server";
 
 import { VertexAI } from "@google-cloud/vertexai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Transaction } from "@/lib/types";
 
-// Helper to initialize Vertex AI securely
+// Helper to initialize Vertex AI securely (when no user key is provided)
 function getVertexAI() {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
   let credentials;
@@ -82,17 +83,29 @@ const responseSchema = {
   required: ["optimizations", "anomalies", "fixedVariableBreakdown", "detectedCurrency"],
 };
 
-export async function generateFinancialInsights(transactions: Transaction[]) {
+export async function generateFinancialInsights(transactions: Transaction[], userApiKey?: string) {
   try {
-    const vertexAI = getVertexAI();
-    
-    // We use gemini-1.5-flash as it is fast, highly capable of structured data, and cost-effective
-    const generativeModel = vertexAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
-    });
+    let generativeModel;
+
+    // BYOK Approach: If user provides their own key, use the standard AI SDK
+    if (userApiKey) {
+      const genAI = new GoogleGenerativeAI(userApiKey);
+      generativeModel = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
+      });
+    } else {
+      // Fallback to our Vertex AI Service Account
+      const vertexAI = getVertexAI();
+      generativeModel = vertexAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
+      });
+    }
 
     // Strip out unnecessary data to save tokens and minimize PII exposure
     const simplifiedTransactions = transactions.map((t) => ({
@@ -120,23 +133,30 @@ export async function generateFinancialInsights(transactions: Transaction[]) {
       ${JSON.stringify(simplifiedTransactions, null, 2)}
     `;
 
-    const request = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    };
-
-    const response = await generativeModel.generateContent(request);
-    const resultText = response.response.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Note: The Vertex SDK and the standard Generative AI SDK have slightly different 
+    // ways they return the response payload. We need to handle both safely.
+    const result = await generativeModel.generateContent(prompt);
+    
+    // In @google/generative-ai, it's result.response.text()
+    // In @google-cloud/vertexai, it's response.candidates[0].content.parts[0].text
+    let resultText = "";
+    const res = result.response as any;
+    if (typeof res.text === "function") {
+      resultText = res.text();
+    } else if (res.candidates?.[0]?.content?.parts?.[0]?.text) {
+      resultText = res.candidates[0].content.parts[0].text;
+    }
 
     if (!resultText) {
       throw new Error("No response from AI");
     }
 
     return JSON.parse(resultText);
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI Insights Error:", error);
-    // In demo mode or if keys are missing, return a graceful fallback
+    // In demo mode or if keys are missing/invalid, return a graceful fallback
     return {
-      error: "Unable to generate insights at this time. Please check your backend connection.",
+      error: error.message || "Unable to generate insights at this time. Please check your backend connection or your API Key.",
       demoFallback: true
     };
   }

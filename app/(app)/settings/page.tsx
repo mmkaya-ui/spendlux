@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Globe, Bell, Shield, Trash2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -8,6 +8,17 @@ export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const [currency, setCurrency] = useState("USD");
   const [notifications, setNotifications] = useState(true);
+  const [apiKey, setApiKey] = useState("");
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem("spendlux-gemini-key");
+    if (savedKey) setApiKey(savedKey);
+  }, []);
+
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    localStorage.setItem("spendlux-gemini-key", val);
+  };
 
   return (
     <div className="fade-in">
@@ -63,6 +74,21 @@ export default function SettingsPage() {
               <option value="GBP">GBP (£)</option>
               <option value="TRY">TRY (₺)</option>
             </select>
+          </div>
+          <div>
+            <label className="input-label" htmlFor="settings-apikey">Google Gemini API Key (BYOK)</label>
+            <input 
+              type="password"
+              className="input-field" 
+              id="settings-apikey" 
+              placeholder="AIzaSy..."
+              value={apiKey} 
+              onChange={(e) => handleApiKeyChange(e.target.value)} 
+              style={{ maxWidth: 400 }}
+            />
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginTop: "var(--space-1)" }}>
+              If provided, this app will use your personal API key instead of the server default. Stored locally.
+            </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-3) 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
