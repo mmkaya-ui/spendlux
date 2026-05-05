@@ -69,7 +69,10 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "application/pdf": [".pdf"] },
+    accept: { 
+      "application/pdf": [".pdf"],
+      "text/csv": [".csv"]
+    },
     maxSize: 10 * 1024 * 1024, // 10MB
     maxFiles: 12,
   });
@@ -98,7 +101,7 @@ export default function UploadPage() {
     <div className="fade-in">
       <div className="page-header">
         <h1>Upload Statements</h1>
-        <p>Drop your bank statements or credit card exports here. We support PDF files up to 12 months retroactively.</p>
+        <p>Drop your bank statements or credit card exports here. We support PDF and CSV files.</p>
       </div>
 
       {/* Drop Zone */}
@@ -112,11 +115,9 @@ export default function UploadPage() {
         <div className="drop-icon">
           <UploadIcon size={48} />
         </div>
-        <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 600, marginBottom: "var(--space-2)" }}>
-          {isDragActive ? "Drop your files here" : "Drag & drop PDF statements"}
-        </h3>
+          {isDragActive ? "Drop your files here" : "Drag & drop statements"}
         <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", marginBottom: "var(--space-4)" }}>
-          or click to browse • PDF only • Max 10MB per file
+          or click to browse • PDF or CSV • Max 10MB per file
         </p>
         <button className="btn btn-secondary" type="button">
           Browse Files
@@ -198,8 +199,8 @@ export default function UploadPage() {
       }}>
         <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
         <span>
-          <strong>Your privacy matters.</strong> Uploaded PDFs are processed in a secure environment and automatically purged after
-          transaction data is extracted. We never store your raw bank statements.
+          <strong>Your privacy matters.</strong> Uploaded files are processed in a secure environment and automatically purged after
+          transaction data is extracted. We never store your raw statements.
         </span>
       </div>
     </div>
