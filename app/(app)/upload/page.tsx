@@ -13,35 +13,40 @@ import {
 import { UploadJob } from "@/lib/types";
 import { generateId } from "@/lib/utils";
 
-// Simulate processing stages
-function simulateProcessing(
-  jobId: string,
-  setJobs: React.Dispatch<React.SetStateAction<UploadJob[]>>
-) {
-  const stages: { status: UploadJob["status"]; progress: number; delay: number }[] = [
-    { status: "uploading", progress: 30, delay: 800 },
-    { status: "extracting", progress: 60, delay: 2000 },
-    { status: "categorizing", progress: 85, delay: 1500 },
-    { status: "ready", progress: 100, delay: 1000 },
-  ];
-
-  let totalDelay = 0;
-  stages.forEach((stage) => {
-    totalDelay += stage.delay;
-    setTimeout(() => {
-      setJobs((prev) =>
-        prev.map((j) =>
-          j.id === jobId
-            ? { ...j, status: stage.status, progress: stage.progress, transactionCount: stage.status === "ready" ? Math.floor(Math.random() * 40) + 15 : undefined }
-            : j
-        )
-      );
-    }, totalDelay);
-  });
-}
+import { processBankStatement } from "@/app/actions/upload";
+import { useAuth } from "@/lib/auth-context";
 
 export default function UploadPage() {
   const [jobs, setJobs] = useState<UploadJob[]>([]);
+  const { user } = useAuth();
+
+  const handleRealUpload = async (file: File, jobId: string) => {
+    if (!user) return;
+    
+    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "uploading", progress: 20 } : j));
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "extracting", progress: 50 } : j));
+      const result = await processBankStatement(formData, user.uid);
+      
+      if (result.success) {
+        setJobs(prev => prev.map(j => j.id === jobId ? { 
+          ...j, 
+          status: "ready", 
+          progress: 100, 
+          transactionCount: result.count 
+        } : j));
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err: any) {
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "error", progress: 0 } : j));
+      console.error(err);
+    }
+  };
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -55,12 +60,11 @@ export default function UploadPage() {
 
       setJobs((prev) => [...prev, ...newJobs]);
 
-      // Start simulated processing for each
-      newJobs.forEach((job) => {
-        setTimeout(() => simulateProcessing(job.id, setJobs), 300);
+      acceptedFiles.forEach((file, index) => {
+        handleRealUpload(file, newJobs[index].id);
       });
     },
-    []
+    [user]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

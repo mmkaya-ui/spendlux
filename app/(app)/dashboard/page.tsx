@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   TrendingDown,
   TrendingUp,
@@ -8,7 +8,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ChevronRight,
+  Plus,
 } from "lucide-react";
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -27,19 +29,48 @@ import {
   getCategoryBreakdown,
 } from "@/lib/demo-data";
 import AiInsights from "@/components/AiInsights";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth-context";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { Transaction } from "@/lib/types";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const transactions = DEMO_TRANSACTIONS;
-  const trends = DEMO_MONTHLY_TRENDS;
+  const [realTransactions, setRealTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user || !db) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, "users", user.uid, "transactions"),
+      orderBy("date", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const txs = snapshot.docs.map(doc => doc.data() as Transaction);
+      setRealTransactions(txs);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const transactions = realTransactions.length > 0 ? realTransactions : (loading ? [] : DEMO_TRANSACTIONS);
+  const isDemo = realTransactions.length === 0 && !loading;
+  const trends = DEMO_MONTHLY_TRENDS; // For now keep demo trends until we have enough real data for history
 
   // Calculate totals
   const totalInflow = useMemo(
-    () => transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0),
+    () => transactions.filter((t) => t.type?.toLowerCase() === "income").reduce((s, t) => s + t.amount, 0),
     [transactions]
   );
   const totalOutflow = useMemo(
-    () => transactions.filter((t) => t.type === "expense").reduce((s, t) => s + Math.abs(t.amount), 0),
+    () => transactions.filter((t) => t.type?.toLowerCase() === "expense").reduce((s, t) => s + Math.abs(t.amount), 0),
     [transactions]
   );
   const trueBalance = totalInflow - totalOutflow;
@@ -94,6 +125,31 @@ export default function DashboardPage() {
         <h1>Dashboard</h1>
         <p>Your financial overview for this month</p>
       </div>
+
+      {isDemo && (
+        <div className="glass" style={{ 
+          padding: "var(--space-4) var(--space-6)", 
+          marginBottom: "var(--space-8)", 
+          background: "var(--accent-muted)", 
+          border: "1px solid var(--accent)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-4)"
+        }}>
+          <div>
+            <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--accent)", marginBottom: "var(--space-1)" }}>
+              Viewing Demo Data
+            </h4>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>
+              You haven&apos;t uploaded any bank statements yet. We&apos;re showing sample data so you can see how SpendLux works.
+            </p>
+          </div>
+          <Link href="/upload" className="btn btn-primary" style={{ fontSize: "var(--text-xs)", whiteSpace: "nowrap" }}>
+            <Plus size={14} style={{ marginRight: "var(--space-2)" }} /> Upload First Statement
+          </Link>
+        </div>
+      )}
 
       {/* Stat Cards */}
       <div className="card-grid card-grid-3" style={{ marginBottom: "var(--space-8)" }}>
