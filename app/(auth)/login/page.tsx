@@ -52,10 +52,6 @@ export default function LoginPage() {
     }
   };
 
-  // Demo mode - skip auth
-  const handleDemo = () => {
-    router.push("/dashboard");
-  };
 
   return (
     <div className="auth-layout">
@@ -188,17 +184,7 @@ export default function LoginPage() {
           </button>
         </p>
 
-        {/* Demo mode button */}
-        <div style={{ marginTop: "var(--space-4)", textAlign: "center" }}>
-          <button
-            onClick={handleDemo}
-            className="btn btn-ghost"
-            id="btn-demo"
-            style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}
-          >
-            Try demo mode →
-          </button>
-        </div>
+        </p>
       </div>
     </div>
   );

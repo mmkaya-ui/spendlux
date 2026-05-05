@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { User, Globe, Bell, Shield, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
+  const { user } = useAuth();
   const [currency, setCurrency] = useState("USD");
   const [notifications, setNotifications] = useState(true);
   const [apiKey, setApiKey] = useState("");
@@ -36,11 +38,11 @@ export default function SettingsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)" }}>
           <div>
             <label className="input-label" htmlFor="settings-name">Display Name</label>
-            <input className="input-field" id="settings-name" defaultValue="Demo User" />
+            <input className="input-field" id="settings-name" defaultValue={user?.displayName || "User"} readOnly style={{ opacity: 0.8 }} />
           </div>
           <div>
             <label className="input-label" htmlFor="settings-email">Email</label>
-            <input className="input-field" id="settings-email" defaultValue="demo@spendlux.app" disabled style={{ opacity: 0.5 }} />
+            <input className="input-field" id="settings-email" defaultValue={user?.email || ""} disabled style={{ opacity: 0.5 }} />
           </div>
         </div>
       </div>

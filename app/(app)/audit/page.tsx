@@ -10,19 +10,10 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { PendingTransaction } from "@/lib/types";
-import { DEMO_CATEGORIES } from "@/lib/demo-data";
+import { DEFAULT_CATEGORIES } from "@/lib/types";
 
-// Generate demo pending transactions
-const DEMO_PENDING: PendingTransaction[] = [
-  { id: "ptx_1", amount: -8750, date: "2026-05-02T00:00:00Z", suggestedCategoryId: "cat_groceries", suggestedCategoryName: "Groceries", confidence: 0.95, description: "WHOLE FOODS MKT #10234", merchant: "Whole Foods", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_2", amount: -4500, date: "2026-05-04T00:00:00Z", suggestedCategoryId: "cat_dining", suggestedCategoryName: "Dining Out", confidence: 0.88, description: "OLIVE GARDEN #5521", merchant: "Olive Garden", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_3", amount: -175000, date: "2026-05-01T00:00:00Z", suggestedCategoryId: "cat_housing", suggestedCategoryName: "Housing", confidence: 0.98, description: "RENT PAYMENT - APT 4B", merchant: "Landlord LLC", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_4", amount: -3200, date: "2026-05-14T00:00:00Z", suggestedCategoryId: "cat_transport", suggestedCategoryName: "Transport", confidence: 0.72, description: "UBER *TRIP-8834X", merchant: "Uber", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_5", amount: -12900, date: "2026-05-10T00:00:00Z", suggestedCategoryId: "cat_discretionary", suggestedCategoryName: "Discretionary", confidence: 0.45, description: "AMZN MKTP US*2K83H1", merchant: "Amazon", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_6", amount: 520000, date: "2026-05-01T00:00:00Z", suggestedCategoryId: "cat_salary", suggestedCategoryName: "Salary", confidence: 0.99, description: "ACME CORP PAYROLL", merchant: "Acme Corp", type: "income", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_7", amount: -1599, date: "2026-05-01T00:00:00Z", suggestedCategoryId: "cat_subs", suggestedCategoryName: "Subscriptions", confidence: 0.97, description: "NETFLIX.COM", merchant: "Netflix", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-  { id: "ptx_8", amount: -6700, date: "2026-05-18T00:00:00Z", suggestedCategoryId: "cat_dining", suggestedCategoryName: "Dining Out", confidence: 0.62, description: "STEAKHOUSE GRILL & BAR", merchant: "Steakhouse", type: "expense", uploadBatchId: "batch_1", status: "pending" },
-];
+// Pending transactions will be fetched from Firestore in a future update
+const INITIAL_PENDING: PendingTransaction[] = [];
 
 function ConfidenceBadge({ confidence }: { confidence: number }) {
   if (confidence >= 0.85) return <span className="badge badge-positive" title={`${Math.round(confidence * 100)}% confidence`}>High</span>;
@@ -38,7 +29,7 @@ function CategoryDropdown({
   onChange: (id: string, name: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const current = DEMO_CATEGORIES.find((c) => c.id === currentId);
+  const current = DEFAULT_CATEGORIES.find((c) => c.name === currentId);
 
   return (
     <div style={{ position: "relative" }}>
@@ -59,25 +50,25 @@ function CategoryDropdown({
           borderRadius: "var(--radius-md)", padding: "var(--space-2)",
           minWidth: 180, boxShadow: "var(--shadow-lg)",
         }}>
-          {DEMO_CATEGORIES.map((cat) => (
+          {DEFAULT_CATEGORIES.map((cat) => (
             <button
-              key={cat.id}
-              onClick={() => { onChange(cat.id, cat.name); setOpen(false); }}
+              key={cat.name}
+              onClick={() => { onChange(cat.name, cat.name); setOpen(false); }}
               style={{
                 display: "flex", alignItems: "center", gap: "var(--space-2)",
                 padding: "var(--space-2) var(--space-3)", width: "100%",
                 borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)",
-                background: cat.id === currentId ? "var(--accent-muted)" : "transparent",
+                background: cat.name === currentId ? "var(--accent-muted)" : "transparent",
                 border: "none", cursor: "pointer", color: "var(--text-primary)",
                 transition: "background var(--duration-fast)",
               }}
               type="button"
               onMouseEnter={(e) => { (e.target as HTMLElement).style.background = "var(--bg-overlay)"; }}
-              onMouseLeave={(e) => { (e.target as HTMLElement).style.background = cat.id === currentId ? "var(--accent-muted)" : "transparent"; }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.background = cat.name === currentId ? "var(--accent-muted)" : "transparent"; }}
             >
               <div className="category-dot" style={{ background: cat.color }} />
               <span>{cat.name}</span>
-              {cat.id === currentId && <Check size={12} style={{ marginLeft: "auto", color: "var(--accent)" }} />}
+              {cat.name === currentId && <Check size={12} style={{ marginLeft: "auto", color: "var(--accent)" }} />}
             </button>
           ))}
         </div>
@@ -87,7 +78,7 @@ function CategoryDropdown({
 }
 
 export default function AuditPage() {
-  const [transactions, setTransactions] = useState(DEMO_PENDING);
+  const [transactions, setTransactions] = useState(INITIAL_PENDING);
   const [selectAll, setSelectAll] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -178,69 +169,81 @@ export default function AuditPage() {
 
       {/* Transaction table */}
       <div className="glass" style={{ overflow: "auto" }} id="audit-table">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={toggleSelectAll}
-                  style={{ accentColor: "var(--accent)" }}
-                  aria-label="Select all"
-                />
-              </th>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Confidence</th>
-              <th style={{ textAlign: "right" }}>Amount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((tx) => (
-              <tr key={tx.id} style={{ opacity: tx.status !== "pending" ? 0.5 : 1 }}>
-                <td>
+        {transactions.length > 0 ? (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>
                   <input
                     type="checkbox"
-                    checked={selected.has(tx.id)}
-                    onChange={() => toggleSelect(tx.id)}
-                    disabled={tx.status !== "pending"}
+                    checked={selectAll}
+                    onChange={toggleSelectAll}
                     style={{ accentColor: "var(--accent)" }}
-                    aria-label={`Select ${tx.description}`}
+                    aria-label="Select all"
                   />
-                </td>
-                <td style={{ whiteSpace: "nowrap", color: "var(--text-secondary)" }}>
-                  {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </td>
-                <td>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{tx.description}</div>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>{tx.merchant}</div>
-                  </div>
-                </td>
-                <td>
-                  <CategoryDropdown
-                    currentId={tx.suggestedCategoryId}
-                    onChange={(catId, catName) => changeCategory(tx.id, catId, catName)}
-                  />
-                </td>
-                <td>
-                  <ConfidenceBadge confidence={tx.confidence} />
-                </td>
-                <td className={`amount-cell ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
-                  {tx.type === "income" ? "+" : "-"}{formatCurrency(Math.abs(tx.amount))}
-                </td>
-                <td>
-                  {tx.status === "approved" && <span className="badge badge-positive"><Check size={10} /> Approved</span>}
-                  {tx.status === "rejected" && <span className="badge badge-negative"><XCircle size={10} /> Rejected</span>}
-                  {tx.status === "pending" && <span className="badge badge-neutral">Pending</span>}
-                </td>
+                </th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Confidence</th>
+                <th style={{ textAlign: "right" }}>Amount</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {transactions.map((tx) => (
+                <tr key={tx.id} style={{ opacity: tx.status !== "pending" ? 0.5 : 1 }}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(tx.id)}
+                      onChange={() => toggleSelect(tx.id)}
+                      disabled={tx.status !== "pending"}
+                      style={{ accentColor: "var(--accent)" }}
+                      aria-label={`Select ${tx.description}`}
+                    />
+                  </td>
+                  <td style={{ whiteSpace: "nowrap", color: "var(--text-secondary)" }}>
+                    {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </td>
+                  <td>
+                    <div>
+                      <div style={{ fontWeight: 500 }}>{tx.description}</div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>{tx.merchant}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <CategoryDropdown
+                      currentId={tx.suggestedCategoryId}
+                      onChange={(catId, catName) => changeCategory(tx.id, catId, catName)}
+                    />
+                  </td>
+                  <td>
+                    <ConfidenceBadge confidence={tx.confidence} />
+                  </td>
+                  <td className={`amount-cell ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
+                    {tx.type === "income" ? "+" : "-"}{formatCurrency(Math.abs(tx.amount))}
+                  </td>
+                  <td>
+                    {tx.status === "approved" && <span className="badge badge-positive"><Check size={10} /> Approved</span>}
+                    {tx.status === "rejected" && <span className="badge badge-negative"><XCircle size={10} /> Rejected</span>}
+                    {tx.status === "pending" && <span className="badge badge-neutral">Pending</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ padding: "var(--space-10) var(--space-6)", textAlign: "center" }}>
+            <div style={{ color: "var(--text-tertiary)", marginBottom: "var(--space-4)" }}>
+              <CheckCircle2 size={48} style={{ margin: "0 auto", opacity: 0.5 }} />
+            </div>
+            <h3 style={{ fontSize: "var(--text-base)", fontWeight: 600, marginBottom: "var(--space-2)" }}>No transactions to audit</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>
+              When you upload statements, transactions requiring your review will appear here.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Commit button */}

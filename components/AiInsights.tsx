@@ -26,24 +26,6 @@ export default function AiInsights({ transactions }: AiInsightsProps) {
       const result = await generateFinancialInsights(transactions, userApiKey);
       if (result.error) {
         setError(result.error);
-        // Load some demo data if the API keys aren't set up yet so the user can see what it looks like
-        if (result.demoFallback) {
-           setInsights({
-             optimizations: [
-               { title: "Cancel Unused Subscription", description: "You have been paying for 'Premium Fitness App' but no gym-related expenses suggest usage.", potentialSavingsCents: 1499 },
-               { title: "Dining Out Frequency", description: "You ate out 8 times this month. Reducing this to 4 times could save significantly.", potentialSavingsCents: 8500 }
-             ],
-             anomalies: [
-               { transactionId: "tx_020", reason: "Amazon purchase of $129.00 is 3x higher than your average discretionary spending." }
-             ],
-             fixedVariableBreakdown: {
-               fixedTotalCents: 195000,
-               variableTotalCents: 85000,
-               reclassifications: []
-             },
-             detectedCurrency: "USD"
-           });
-        }
       } else {
         setInsights(result);
       }

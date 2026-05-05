@@ -60,9 +60,9 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [user]);
 
-  const transactions = realTransactions.length > 0 ? realTransactions : (loading ? [] : DEMO_TRANSACTIONS);
-  const isDemo = realTransactions.length === 0 && !loading;
-  const trends = DEMO_MONTHLY_TRENDS; // For now keep demo trends until we have enough real data for history
+  const transactions = realTransactions;
+  const isDemo = false; // We are removing demo mode
+  const trends: any[] = []; // Real trends will come later from a real aggregation function
 
   // Calculate totals
   const totalInflow = useMemo(
@@ -82,10 +82,8 @@ export default function DashboardPage() {
 
   const maxCategorySpend = categoryBreakdown[0]?.total || 1;
 
-  // Month-over-month change
-  const currentMonthOutflow = trends[trends.length - 1]?.outflow || 0;
-  const prevMonthOutflow = trends[trends.length - 2]?.outflow || 0;
-  const monthChange = percentChange(currentMonthOutflow, prevMonthOutflow);
+  // Month-over-month change (placeholder until real trends logic is added)
+  const monthChange = 0;
 
   // Chart data formatted for Recharts
   const trendData = trends.map((t) => ({
@@ -126,27 +124,28 @@ export default function DashboardPage() {
         <p>Your financial overview for this month</p>
       </div>
 
-      {isDemo && (
+      {realTransactions.length === 0 && !loading && (
         <div className="glass" style={{ 
-          padding: "var(--space-4) var(--space-6)", 
+          padding: "var(--space-8) var(--space-6)", 
           marginBottom: "var(--space-8)", 
-          background: "var(--accent-muted)", 
+          background: "var(--bg-glass-hover)", 
           border: "1px solid var(--accent)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "var(--space-4)"
+          textAlign: "center"
         }}>
-          <div>
-            <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--accent)", marginBottom: "var(--space-1)" }}>
-              Viewing Demo Data
-            </h4>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>
-              You haven&apos;t uploaded any bank statements yet. We&apos;re showing sample data so you can see how SpendLux works.
-            </p>
+          <div style={{ 
+            width: 64, height: 64, borderRadius: "50%", background: "var(--accent-muted)", 
+            display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto var(--space-4)" 
+          }}>
+            <Wallet size={32} style={{ color: "var(--accent)" }} />
           </div>
-          <Link href="/upload" className="btn btn-primary" style={{ fontSize: "var(--text-xs)", whiteSpace: "nowrap" }}>
-            <Plus size={14} style={{ marginRight: "var(--space-2)" }} /> Upload First Statement
+          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-primary)", marginBottom: "var(--space-2)" }}>
+            Welcome to SpendLux!
+          </h2>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", maxWidth: 500, margin: "0 auto var(--space-6)" }}>
+            Your financial dashboard is ready. Upload your first bank statement to start seeing insights and optimizations.
+          </p>
+          <Link href="/upload" className="btn btn-primary btn-lg">
+            <Plus size={18} style={{ marginRight: "var(--space-2)" }} /> Upload Your First Statement
           </Link>
         </div>
       )}
@@ -198,9 +197,11 @@ export default function DashboardPage() {
       </div>
 
       {/* AI Insights Engine */}
-      <div style={{ marginBottom: "var(--space-8)" }}>
-        <AiInsights transactions={transactions} />
-      </div>
+      {transactions.length > 0 && (
+        <div style={{ marginBottom: "var(--space-8)" }}>
+          <AiInsights transactions={transactions} />
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="card-grid card-grid-2" style={{ marginBottom: "var(--space-8)" }}>
