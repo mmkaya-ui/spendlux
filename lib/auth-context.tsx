@@ -51,14 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
+    if (!auth || !googleProvider) throw new Error("Firebase not initialized");
     await signInWithPopup(auth, googleProvider);
   };
 
   const signInWithApple = async () => {
+    if (!auth || !appleProvider) throw new Error("Firebase not initialized");
     await signInWithPopup(auth, appleProvider);
   };
 
   const signInWithEmail = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase not initialized");
     await signInWithEmailAndPassword(auth, email, password);
   };
 
@@ -67,11 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     name: string
   ) => {
+    if (!auth) throw new Error("Firebase not initialized");
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
   };
 
   const signOut = async () => {
+    if (!auth) return;
     await firebaseSignOut(auth);
   };
 
