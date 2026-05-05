@@ -6,14 +6,15 @@ import { Transaction } from "@/lib/types";
 // Helper to initialize Vertex AI securely
 function getVertexAI() {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
-  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-
-  if (!projectId || !credentialsJson) {
+  let credentials;
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64) {
+    const jsonStr = Buffer.from(process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64, 'base64').toString('utf-8');
+    credentials = JSON.parse(jsonStr);
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  } else {
     throw new Error("Missing Vertex AI configuration on server");
   }
-
-  // Parse the JSON string from the environment variable
-  const credentials = JSON.parse(credentialsJson);
 
   return new VertexAI({
     project: projectId,
